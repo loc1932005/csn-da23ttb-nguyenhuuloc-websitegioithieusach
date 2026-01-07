@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Chi tiết sách</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body {
+    background: linear-gradient(135deg, #eef2ff, #f8fafc);
+}
+
+/* ===== CARD ===== */
+.card {
+    border-radius: 18px;
+    border: none;
+}
+
+/* ===== IMAGE ===== */
+.book-detail-img {
+    width:230px;
+    height:340px;
+    object-fit:cover;
+    border-radius:16px;
+    box-shadow:0 15px 30px rgba(0,0,0,.25);
+    transition:.3s;
+}
+.book-detail-img:hover {
+    transform: scale(1.05);
+}
+
+/* ===== FAVORITE ===== */
+#favoriteBtn {
+    font-size:16px;
+    font-weight:600;
+    padding:10px 18px;
+    border-radius:999px;
+    transition:.25s;
+}
+#favoriteBtn:hover {
+    transform: scale(1.05);
+}
+#favoriteBtn.active {
+    background: linear-gradient(45deg,#ff5252,#ff1744);
+    color:#fff;
+    border:none;
+    box-shadow:0 6px 20px rgba(255,23,68,.5);
+}
+
+/* ===== STAR ===== */
+.rating {
+    background:#f8fafc;
+    padding:10px 14px;
+    border-radius:12px;
+    display:inline-block;
+}
+.star {
+    font-size:28px;
+    cursor:pointer;
+    color:#cbd5e1;
+    transition:.2s;
+}
+.star:hover {
+    transform: scale(1.2);
+}
+.star.active {
+    color:#facc15;
+}
+
+/* ===== COMMENT ===== */
+#commentList li {
+    border-radius:14px;
+    margin-bottom:10px;
+}
+.comment-actions button {
+    margin-right:6px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container mt-5 mb-5">
+
+<a href="index.html" class="btn btn-outline-secondary mb-4">
+⬅ Quay về trang chủ
+</a>
+
+<div class="card shadow-lg p-4">
+<div class="row align-items-center">
+
+<div class="col-md-4 text-center mb-3">
+    <img id="bookImg" class="book-detail-img">
+</div>
+
+<div class="col-md-8">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 id="title" class="fw-bold"></h2>
+        <button id="favoriteBtn" class="btn btn-outline-danger">
+            🤍 Yêu thích
+        </button>
+    </div>
+
+    <div class="rating mb-3">
+        <span class="star" data-star="1">★</span>
+        <span class="star" data-star="2">★</span>
+        <span class="star" data-star="3">★</span>
+        <span class="star" data-star="4">★</span>
+        <span class="star" data-star="5">★</span>
+        <span id="ratingText" class="ms-2 text-muted"></span>
+    </div>
+
+    <p class="fs-5"><b>Tác giả:</b> <span id="author"></span></p>
+    <p>
+        <b>Thể loại:</b>
+        <span id="category" class="badge bg-primary fs-6"></span>
+    </p>
+
+    <p class="text-muted mt-3">
+        📘 Cuốn sách mang lại nhiều kiến thức bổ ích và giá trị thực tiễn,
+        phù hợp cho việc học tập và phát triển bản thân.
+    </p>
+</div>
+
+</div>
+</div>
+
+<!-- COMMENT -->
+<div class="card shadow-sm mt-4 p-4">
+<h5 class="fw-bold mb-3">💬 Bình luận</h5>
+
+<textarea id="commentInput"
+class="form-control mb-2"
+rows="3"
+placeholder="Chia sẻ cảm nhận của bạn..."></textarea>
+
+<button class="btn btn-primary mb-3" onclick="addComment()">
+🚀 Gửi bình luận
+</button>
+
+<ul class="list-group" id="commentList"></ul>
+</div>
+
+</div>
+
+<script>
+/* ===== QUYỀN ===== */
+const isAdmin = localStorage.getItem("isAdmin") === "true";
+const currentUser = localStorage.getItem("currentUser") || "Khách";
+
+/* ===== ELEMENT ===== */
+const titleEl = document.getElementById("title");
+const authorEl = document.getElementById("author");
+const categoryEl = document.getElementById("category");
+const bookImg = document.getElementById("bookImg");
+const favoriteBtn = document.getElementById("favoriteBtn");
+const ratingText = document.getElementById("ratingText");
+const commentInput = document.getElementById("commentInput");
+const commentList = document.getElementById("commentList");
+
+/* ===== DATA ===== */
+const index = localStorage.getItem("currentBook");
+const books = JSON.parse(localStorage.getItem("books")) || [];
+
+if (index === null || !books[index]) {
+    alert("Không tìm thấy sách!");
+    location.href = "index.html";
+}
+
+const book = books[index];
+
+/* ===== HIỂN THỊ ===== */
+titleEl.textContent = book.title;
+authorEl.textContent = book.author;
+categoryEl.textContent = book.category;
+bookImg.src = book.image || "images/book1.jpg";
+
+/* ===== FAVORITE ===== */
+const favKey = "fav_" + index;
+function updateFav() {
+    const isFav = localStorage.getItem(favKey) === "true";
+    favoriteBtn.classList.toggle("active", isFav);
+    favoriteBtn.innerHTML = isFav ? "❤️ Đã yêu thích" : "🤍 Yêu thích";
+}
+updateFav();
+
+favoriteBtn.onclick = () => {
+    localStorage.setItem(favKey, !(localStorage.getItem(favKey) === "true"));
+    updateFav();
+};
+
+/* ===== STAR ===== */
+const stars = document.querySelectorAll(".star");
+const rateKey = "rate_" + index;
+let rating = Number(localStorage.getItem(rateKey)) || 0;
+
+function renderStars(val) {
+    stars.forEach(s =>
+        s.classList.toggle("active", Number(s.dataset.star) <= val)
+    );
+    ratingText.textContent = val ? `(${val}/5)` : "";
+}
+renderStars(rating);
+
+stars.forEach(s => {
+    s.onclick = () => {
+        rating = Number(s.dataset.star);
+        localStorage.setItem(rateKey, rating);
+        renderStars(rating);
+    };
+});
+
+/* ===== COMMENT ===== */
+const cKey = "cmt_" + index;
+
+window.addComment = function () {
+    if (!commentInput.value.trim()) return;
+
+    const list = JSON.parse(localStorage.getItem(cKey)) || [];
+    list.unshift({
+        user: currentUser,
+        text: commentInput.value,
+        time: new Date().toLocaleString("vi-VN")
+    });
+
+    localStorage.setItem(cKey, JSON.stringify(list));
+    commentInput.value = "";
+    loadComments();
+};
+
+window.editComment = function (i) {
+    const list = JSON.parse(localStorage.getItem(cKey)) || [];
+    if (!isAdmin && list[i].user !== currentUser) return;
+    const t = prompt("Sửa bình luận:", list[i].text);
+    if (!t) return;
+    list[i].text = t;
+    localStorage.setItem(cKey, JSON.stringify(list));
+    loadComments();
+};
+
+window.deleteComment = function (i) {
+    const list = JSON.parse(localStorage.getItem(cKey)) || [];
+    if (!isAdmin && list[i].user !== currentUser) return;
+    if (!confirm("Xóa bình luận này?")) return;
+    list.splice(i, 1);
+    localStorage.setItem(cKey, JSON.stringify(list));
+    loadComments();
+};
+
+function loadComments() {
+    const list = JSON.parse(localStorage.getItem(cKey)) || [];
+    commentList.innerHTML = "";
+
+    if (!list.length) {
+        commentList.innerHTML =
+            `<li class="list-group-item text-muted">Chưa có bình luận</li>`;
+        return;
+    }
+
+    list.forEach((c, i) => {
+        const can = isAdmin || c.user === currentUser;
+        commentList.innerHTML += `
+        <li class="list-group-item">
+            <b>${c.user}</b>
+            <small class="text-muted d-block">${c.time}</small>
+            <div>${c.text}</div>
+            ${can ? `
+            <div class="comment-actions mt-2">
+                <button class="btn btn-sm btn-outline-warning" onclick="editComment(${i})">✏️</button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteComment(${i})">🗑</button>
+            </div>` : ""}
+        </li>`;
+    });
+}
+loadComments();
+</script>
+
+</body>
+</html>

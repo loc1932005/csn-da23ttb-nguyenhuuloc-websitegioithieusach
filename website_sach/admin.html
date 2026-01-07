@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Admin – Quản lý sách</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body{background:#f4f6f9}
+.card{border:none;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
+.badge-category{
+    background:linear-gradient(135deg,#dbeafe,#eff6ff);
+    color:#1e40af;border:1px solid #bfdbfe;
+    border-radius:999px;padding:6px 14px;font-weight:500;
+    display:inline-flex;align-items:center;gap:6px
+}
+.badge-category span{cursor:pointer;color:#ef4444;font-weight:bold}
+.toggle-btn{background:#e5e7eb;border:none;padding:6px 12px;border-radius:8px}
+.table-bordered{border:2px solid #000}
+.table-bordered th,.table-bordered td{border:1px solid #000}
+.table thead{background:#1f2937;color:#fff}
+.toggle-box{overflow:hidden;transition:max-height .3s ease,opacity .3s ease}
+.toggle-box.hidden{max-height:0;opacity:0}
+.toggle-box.visible{max-height:1000px;opacity:1}
+</style>
+</head>
+
+<body>
+
+<!-- ===== KIỂM TRA QUYỀN ADMIN ===== -->
+<script>
+if(localStorage.getItem("isAdmin") !== "true"){
+    location.href = "login.html";
+}
+</script>
+
+<div class="container py-4">
+
+<!-- ================= HEADER ================= -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold">📘 Trang quản trị sách</h3>
+
+    <div class="d-flex align-items-center gap-2">
+
+        <!-- 🔔 SÁCH CHỜ DUYỆT -->
+        <a href="admin-review.html"
+           class="btn btn-outline-danger position-relative">
+            🔔 Chờ duyệt
+            <span id="pendingBadge"
+                  class="position-absolute top-0 start-100 translate-middle
+                         badge rounded-pill bg-danger"
+                  style="display:none">0</span>
+        </a>
+
+        <button class="btn btn-success btn-sm" onclick="exportExcel()">🧾 Excel</button>
+        <button class="btn btn-info btn-sm" onclick="exportData()">📤 Export JSON</button>
+        <a href="index.html" class="btn btn-primary btn-sm">⬅ Trang chủ</a>
+        <button class="btn btn-danger btn-sm" onclick="logout()">🚪 Đăng xuất</button>
+    </div>
+</div>
+
+<!-- ================= THỐNG KÊ ================= -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="text-muted">Tổng số sách</h6>
+                <h2 id="totalBooks" class="fw-bold text-primary">0</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="text-muted">Thể loại (theo sách)</h6>
+                <h2 id="totalCategories" class="fw-bold text-success">0</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="text-muted">Thể loại hệ thống</h6>
+                <h2 id="totalSystemCategories" class="fw-bold text-danger">0</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= SEARCH + FILTER ================= -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <input id="searchInput"
+               class="form-control"
+               placeholder="🔍 Tìm theo tên sách hoặc tác giả"
+               oninput="renderTable()">
+    </div>
+    <div class="col-md-3">
+        <select id="filterCategory"
+                class="form-select"
+                onchange="renderTable()">
+            <option value="">-- Tất cả thể loại --</option>
+        </select>
+    </div>
+</div>
+
+<!-- ================= THỂ LOẠI ================= -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <h6 class="fw-bold">📚 Thể loại (theo sách)</h6>
+                    <button class="toggle-btn" onclick="toggleBox('byBooks')">Ẩn / Hiện</button>
+                </div>
+                <div id="byBooks" class="toggle-box hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <h6 class="fw-bold">🗂️ Thể loại (hệ thống)</h6>
+                    <button class="toggle-btn" onclick="toggleBox('systemCats')">Ẩn / Hiện</button>
+                </div>
+                <div id="systemCats" class="toggle-box hidden"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= THÊM THỂ LOẠI ================= -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h6 class="fw-bold">➕ Thêm thể loại</h6>
+        <div class="d-flex mb-3">
+            <input id="newCategory" class="form-control me-2" placeholder="Tên thể loại">
+            <button class="btn btn-primary" onclick="addCategory()">Thêm</button>
+        </div>
+        <div id="categoryAdminSystem"></div>
+    </div>
+</div>
+
+<!-- ================= FORM SÁCH ================= -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5>➕ Thêm / Sửa sách</h5>
+
+        <input type="hidden" id="editIndex">
+
+        <input id="title" class="form-control mb-2" placeholder="Tên sách">
+        <input id="author" class="form-control mb-2" placeholder="Tác giả">
+        <select id="category" class="form-select mb-2"></select>
+
+        <input id="imageURL"
+               class="form-control mb-2"
+               placeholder="VD: images/book12.jpg"
+               oninput="previewImage()">
+
+        <img id="preview" style="max-height:150px;display:none;border-radius:10px">
+
+        <button class="btn btn-primary" onclick="saveBook()">Lưu</button>
+        <button class="btn btn-secondary" onclick="resetForm()">Hủy</button>
+    </div>
+</div>
+
+<!-- ================= BẢNG SÁCH ================= -->
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-bordered text-center mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Ảnh</th>
+                    <th>Tên</th>
+                    <th>Tác giả</th>
+                    <th>Thể loại</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody id="bookTable"></tbody>
+        </table>
+    </div>
+</div>
+
+</div>
+
+<!-- XLSX -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<!-- ADMIN JS -->
+<script src="js/admin.js"></script>
+
+</body>
+</html>

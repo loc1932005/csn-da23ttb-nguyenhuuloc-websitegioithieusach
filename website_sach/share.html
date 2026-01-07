@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Chia sẻ sách của bạn</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body{background:#f4f6f9}
+.card{border:none;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.preview-img{max-height:180px;border-radius:12px;display:none}
+.badge-wait{
+    background:#fef3c7;
+    color:#92400e;
+    padding:6px 14px;
+    border-radius:999px;
+    font-weight:600
+}
+</style>
+</head>
+
+<body>
+
+<div class="container py-5">
+
+<!-- HEADER -->
+<div class="text-center mb-4">
+    <h2 class="fw-bold">📚 Chia sẻ sách của bạn</h2>
+    <p class="text-muted">
+        Sách bạn gửi sẽ được <b>Admin xem xét & duyệt</b> trước khi hiển thị
+    </p>
+    <span class="badge-wait">⏳ Chờ duyệt</span>
+</div>
+
+<!-- FORM -->
+<div class="row justify-content-center">
+<div class="col-md-6">
+
+<div class="card">
+<div class="card-body">
+
+    <input id="title" class="form-control mb-3" placeholder="Tên sách">
+    <input id="author" class="form-control mb-3" placeholder="Tác giả">
+
+    <select id="category" class="form-select mb-3">
+        <option value="">-- Chọn thể loại --</option>
+    </select>
+
+    <!-- UPLOAD ẢNH -->
+    <label class="form-label fw-bold">Ảnh bìa sách</label>
+    <input type="file"
+           class="form-control mb-2"
+           accept="image/*"
+           onchange="previewImage(event)">
+
+    <img id="preview" class="preview-img mb-3">
+
+    <input id="sender" class="form-control mb-3"
+           placeholder="Tên bạn (hoặc nickname)">
+
+    <button class="btn btn-success w-100 fw-bold"
+            onclick="submitBook()">
+        📤 Gửi sách cho admin
+    </button>
+
+    <a href="index.html"
+       class="btn btn-secondary w-100 mt-2">
+        ⬅ Quay về trang chủ
+    </a>
+
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+
+<script src="js/share.js"></script>
+</body>
+</html>
